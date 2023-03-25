@@ -1,4 +1,4 @@
-import pageModel from "../db/models/pageModel.js"
+import PostModel from "../db/models/PostModel.js"
 import auth from "../middlewares/auth.js"
 import validate from "../middlewares/validate.js"
 import {
@@ -12,9 +12,9 @@ import {
   titleValidator,
 } from "../validators.js"
 
-const preparePagesRoutes = ({ app }) => {
-  app.page(
-    "/pages",
+const preparePostsRoutes = ({ app }) => {
+  app.post(
+    "/posts",
     auth,
     validate({
       body: {
@@ -29,8 +29,7 @@ const preparePagesRoutes = ({ app }) => {
           user: { id: userId },
         },
       } = req.locals
-      const page = await pageModel
-        .query()
+      const post = await PostModel.query()
         .insert({
           title,
           content,
@@ -38,12 +37,12 @@ const preparePagesRoutes = ({ app }) => {
         })
         .returning("*")
 
-      res.send({ result: page })
+      res.send({ result: post })
     }
   )
 
   app.get(
-    "/pages",
+    "/posts",
     validate({
       query: {
         limit: limitValidator,
@@ -55,7 +54,7 @@ const preparePagesRoutes = ({ app }) => {
     }),
     async (req, res) => {
       const { limit, page, orderField, order, isPublished } = req.locals.query
-      const query = pageModel.query().modify("paginate", limit, page)
+      const query = PostModel.query().modify("paginate", limit, page)
 
       if (isPublished) {
         query.whereNotNull("publishedAt")
@@ -71,10 +70,10 @@ const preparePagesRoutes = ({ app }) => {
         .clearOrder()
         .count()
       const count = Number.parseInt(countResult.count, 10)
-      const pages = await query.withGraphFetched("author")
+      const posts = await query.withGraphFetched("author")
 
       res.send({
-        result: pages,
+        result: posts,
         meta: {
           count,
         },
@@ -83,65 +82,64 @@ const preparePagesRoutes = ({ app }) => {
   )
 
   app.get(
-    "/pages/:pageId",
+    "/posts/:postId",
     validate({
       params: {
-        pageId: idValidator.required(),
+        postId: idValidator.required(),
       },
     }),
     async (req, res) => {
-      const page = await pageModel.query().findById(req.params.pageId)
+      const post = await PostModel.query().findById(req.params.postId)
 
-      if (!page) {
+      if (!post) {
         res.status(404).send({ error: "not found" })
 
         return
       }
 
-      res.send({ result: page })
+      res.send({ result: post })
     }
   )
 
-  app.patch("/pages/:pageId", async (req, res) => {
+  app.patch("/posts/:postId", async (req, res) => {
     const { title, content, published } = req.body
-    const page = await pageModel.query().findById(req.params.pageId)
+    const post = await PostModel.query().findById(req.params.postId)
 
-    if (!page) {
+    if (!post) {
       res.status(404).send({ error: "not found" })
 
       return
     }
 
-    const updatedpage = await pageModel
-      .query()
+    const updatedPost = await PostModel.query()
       .update({
         ...(title ? { title } : {}),
         ...(content ? { content } : {}),
         ...(published ? { published } : {}),
       })
       .where({
-        id: req.params.pageId,
+        id: req.params.postId,
       })
       .returning("*")
 
-    res.send({ result: updatedpage })
+    res.send({ result: updatedPost })
   })
 
-  app.delete("/pages/:pageId", async (req, res) => {
-    const page = await pageModel.query().findById(req.params.pageId)
+  app.delete("/posts/:postId", async (req, res) => {
+    const post = await PostModel.query().findById(req.params.postId)
 
-    if (!page) {
+    if (!post) {
       res.status(404).send({ error: "not found" })
 
       return
     }
 
-    await pageModel.query().delete().where({
-      id: req.params.pageId,
+    await PostModel.query().delete().where({
+      id: req.params.postId,
     })
 
-    res.send({ result: page })
+    res.send({ result: post })
   })
 }
 
-export default preparePagesRoutes
+export default preparePostsRoutes
