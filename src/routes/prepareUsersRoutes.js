@@ -9,6 +9,7 @@ import {
   emailValidator,
   passwordValidator,
   stringValidator,
+  idValidator,
 } from "../validators.js"
 
 const prepareUsersRoutes = ({ app, db }) => {
@@ -92,7 +93,7 @@ const prepareUsersRoutes = ({ app, db }) => {
     const user = await UserModel.query().findById(req.params.userId)
 
     if (!user) {
-      res.status(404).send({ error: "not found" })
+      res.status(404).send({ error: "User not found" })
 
       return
     }
@@ -118,7 +119,7 @@ const prepareUsersRoutes = ({ app, db }) => {
     const user = await UserModel.query().findById(req.params.userId)
 
     if (!user) {
-      res.status(404).send({ error: "not found" })
+      res.status(404).send({ error: "User not found" })
 
       return
     }
@@ -129,6 +130,25 @@ const prepareUsersRoutes = ({ app, db }) => {
 
     res.send({ result: user })
   })
+  app.get(
+    "/users/:userId",
+    validate({
+      params: {
+        userId: idValidator.required(),
+      },
+    }),
+    async (req, res) => {
+      const { userId } = req.params
+      const user = await db("users").where({ id: userId }).first()
+
+      if (!user) {
+        res.status(404).send({ error: "User not found" })
+        return
+      }
+
+      res.send({ result: user })
+    }
+  )
 }
 
 export default prepareUsersRoutes
