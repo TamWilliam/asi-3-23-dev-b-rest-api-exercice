@@ -21,8 +21,8 @@ export const up = async (knex) => {
           id: 2,
           name: "manager",
           permissions: {
-            users: "r",
-            roles: "r",
+            users: "",
+            roles: "",
             pages: "crud",
             navigationMenus: "crud",
           },

@@ -1,28 +1,32 @@
 import BaseModel from "./BaseModel.js"
-import UserModel from "./UserModel.js"
+import hashPassword from "../hashPassword.js"
 
-class PageModel extends BaseModel {
-  static tableName = "pages"
+class UserModel extends BaseModel {
+  static tableName = "users"
 
-  static modifiers = {
-    paginate: (query, limit, page) => {
-      return query.limit(limit).offset((page - 1) * limit)
-    },
+  async setPassword(password) {
+    const [passwordHash, passwordSalt] = await hashPassword(password)
+    this.passwordHash = passwordHash
+    this.passwordSalt = passwordSalt
+  }
+
+  async verifyPassword(password) {
+    const hash = await hashPassword(password, this.passwordSalt)
+    return this.passwordHash === hash
   }
 
   static relationMappings() {
     return {
-      author: {
+      role: {
         relation: BaseModel.BelongsToOneRelation,
-        modelClass: UserModel,
+        modelClass: RoleModel,
         join: {
-          from: "pages.creator",
-          to: "users.id",
+          from: "users.roleId",
+          to: "roles.id",
         },
-        modify: (query) => query.select("id", "firstName", "lastName"),
       },
     }
   }
 }
 
-export default PageModel
+export default UserModel

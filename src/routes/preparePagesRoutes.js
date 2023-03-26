@@ -1,4 +1,4 @@
-import PostModel from "../db/models/PostModel.js"
+import PageModel from "../db/models/PageModel.js"
 import auth from "../middlewares/auth.js"
 import validate from "../middlewares/validate.js"
 import {
@@ -10,39 +10,42 @@ import {
   orderValidator,
   pageValidator,
   titleValidator,
+  statusValidator,
 } from "../validators.js"
 
-const preparePostsRoutes = ({ app }) => {
+const preparePagesRoutes = ({ app }) => {
   app.post(
-    "/posts",
+    "/pages",
     auth,
     validate({
       body: {
         title: titleValidator.required(),
         content: contentValidator.required(),
+        status: statusValidator.required(),
       },
     }),
     async (req, res) => {
       const {
-        body: { title, content },
+        body: { title, content, status },
         session: {
           user: { id: userId },
         },
       } = req.locals
-      const post = await PostModel.query()
+      const page = await PageModel.query()
         .insert({
           title,
           content,
+          status,
           userId,
         })
         .returning("*")
 
-      res.send({ result: post })
+      res.send({ result: page })
     }
   )
 
   app.get(
-    "/posts",
+    "/pages",
     validate({
       query: {
         limit: limitValidator,
@@ -54,7 +57,7 @@ const preparePostsRoutes = ({ app }) => {
     }),
     async (req, res) => {
       const { limit, page, orderField, order, isPublished } = req.locals.query
-      const query = PostModel.query().modify("paginate", limit, page)
+      const query = PageModel.query().modify("paginate", limit, page)
 
       if (isPublished) {
         query.whereNotNull("publishedAt")
@@ -70,10 +73,10 @@ const preparePostsRoutes = ({ app }) => {
         .clearOrder()
         .count()
       const count = Number.parseInt(countResult.count, 10)
-      const posts = await query.withGraphFetched("author")
+      const pages = await query.withGraphFetched("author")
 
       res.send({
-        result: posts,
+        result: pages,
         meta: {
           count,
         },
@@ -82,64 +85,65 @@ const preparePostsRoutes = ({ app }) => {
   )
 
   app.get(
-    "/posts/:postId",
+    "/pages/:pageId",
     validate({
       params: {
-        postId: idValidator.required(),
+        pageId: idValidator.required(),
       },
     }),
     async (req, res) => {
-      const post = await PostModel.query().findById(req.params.postId)
+      const page = await PageModel.query().findById(req.params.pageId)
 
-      if (!post) {
+      if (!page) {
         res.status(404).send({ error: "not found" })
 
         return
       }
 
-      res.send({ result: post })
+      res.send({ result: page })
     }
   )
 
-  app.patch("/posts/:postId", async (req, res) => {
-    const { title, content, published } = req.body
-    const post = await PostModel.query().findById(req.params.postId)
+  app.patch("/pages/:pageId", async (req, res) => {
+    const { title, content, status, published } = req.body
+    const page = await PageModel.query().findById(req.params.pageId)
 
-    if (!post) {
+    if (!page) {
       res.status(404).send({ error: "not found" })
 
       return
     }
 
-    const updatedPost = await PostModel.query()
+    const updatedPage = await PageModel.query()
       .update({
         ...(title ? { title } : {}),
         ...(content ? { content } : {}),
+        ...(status ? { status } : {}),
         ...(published ? { published } : {}),
       })
       .where({
-        id: req.params.postId,
+        id: req.params.pageId,
       })
       .returning("*")
 
-    res.send({ result: updatedPost })
+    res.send({ result: updatedPage })
   })
 
-  app.delete("/posts/:postId", async (req, res) => {
-    const post = await PostModel.query().findById(req.params.postId)
+  app.delete("/pages/:pageId", async (req, res) => {
+    const page = await PageModel.query().findById(req.params.pageId)
 
-    if (!post) {
+    if (!page) {
       res.status(404).send({ error: "not found" })
 
       return
     }
 
-    await PostModel.query().delete().where({
-      id: req.params.postId,
+    await PageModel.query().delete().where({
+      id: req.params.pageId,
     })
 
-    res.send({ result: post })
+    res.send({ result: page })
   })
 }
 
-export default preparePostsRoutes
+export default preparePagesRoutes
