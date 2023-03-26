@@ -7,4 +7,6 @@ export const up = async (knex) => {
   })
 }
 
-export const down = async (knex) => {}
+export const down = async (knex) => {
+  await knex.schema.dropTable("navigationMenu")
+}

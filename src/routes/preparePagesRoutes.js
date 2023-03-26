@@ -11,6 +11,7 @@ import {
   pageValidator,
   titleValidator,
   statusValidator,
+  stringValidator,
 } from "../validators.js"
 
 const preparePagesRoutes = ({ app }) => {
@@ -22,13 +23,14 @@ const preparePagesRoutes = ({ app }) => {
         title: titleValidator.required(),
         content: contentValidator.required(),
         status: statusValidator.required(),
+        url: stringValidator.required(),
       },
     }),
     async (req, res) => {
       const {
-        body: { title, content, status },
+        body: { title, content, status, url },
         session: {
-          user: { id: userId },
+          user: { id: creator },
         },
       } = req.locals
       const page = await PageModel.query()
@@ -36,7 +38,8 @@ const preparePagesRoutes = ({ app }) => {
           title,
           content,
           status,
-          userId,
+          creator,
+          url,
         })
         .returning("*")
 

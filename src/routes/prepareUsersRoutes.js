@@ -11,9 +11,9 @@ import {
   stringValidator,
 } from "../validators.js"
 
-const prepareSignRoutes = ({ app, db }) => {
+const prepareUsersRoutes = ({ app, db }) => {
   app.post(
-    "/sign-up",
+    "/create-user",
     validate({
       body: {
         firstName: firstNameValidator.required(),
@@ -86,6 +86,49 @@ const prepareSignRoutes = ({ app, db }) => {
       res.send({ result: jwt })
     }
   )
+  app.patch("/users/:userId", async (req, res) => {
+    const { firstName, lastName, email, password, roleId } = req.body
+    const [passwordHash, passwordSalt] = await hashPassword(password)
+    const user = await UserModel.query().findById(req.params.userId)
+
+    if (!user) {
+      res.status(404).send({ error: "not found" })
+
+      return
+    }
+
+    const updatedUser = await UserModel.query()
+      .update({
+        ...(firstName ? { firstName } : {}),
+        ...(lastName ? { lastName } : {}),
+        ...(email ? { email } : {}),
+        ...(passwordHash ? { passwordHash } : {}),
+        ...(passwordSalt ? { passwordSalt } : {}),
+        ...(roleId ? { roleId } : {}),
+      })
+      .where({
+        id: req.params.userId,
+      })
+      .returning("*")
+
+    res.send({ result: updatedUser })
+  })
+
+  app.delete("/users/:userId", async (req, res) => {
+    const user = await UserModel.query().findById(req.params.userId)
+
+    if (!user) {
+      res.status(404).send({ error: "not found" })
+
+      return
+    }
+
+    await UserModel.query().delete().where({
+      id: req.params.userId,
+    })
+
+    res.send({ result: user })
+  })
 }
 
-export default prepareSignRoutes
+export default prepareUsersRoutes
