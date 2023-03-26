@@ -2,7 +2,6 @@ import jsonwebtoken from "jsonwebtoken"
 import config from "../config.js"
 import hashPassword from "../db/hashPassword.js"
 import UserModel from "../db/models/UserModel.js"
-import auth from "../middlewares/auth.js"
 import validate from "../middlewares/validate.js"
 import {
   firstNameValidator,
@@ -16,7 +15,6 @@ import {
 const prepareUsersRoutes = ({ app, db }) => {
   app.post(
     "/create-user",
-    auth,
     validate({
       body: {
         firstName: firstNameValidator.required(),
@@ -50,7 +48,6 @@ const prepareUsersRoutes = ({ app, db }) => {
   )
   app.post(
     "/sign-in",
-    auth,
     validate({
       body: {
         email: emailValidator.required(),
@@ -90,7 +87,7 @@ const prepareUsersRoutes = ({ app, db }) => {
       res.send({ result: jwt })
     }
   )
-  app.patch("/users/:userId", auth, async (req, res) => {
+  app.patch("/users/:userId", async (req, res) => {
     const { firstName, lastName, email, password, roleId } = req.body
     const [passwordHash, passwordSalt] = await hashPassword(password)
     const user = await UserModel.query().findById(req.params.userId)
@@ -118,7 +115,7 @@ const prepareUsersRoutes = ({ app, db }) => {
     res.send({ result: updatedUser })
   })
 
-  app.delete("/users/:userId", auth, async (req, res) => {
+  app.delete("/users/:userId", async (req, res) => {
     const user = await UserModel.query().findById(req.params.userId)
 
     if (!user) {
